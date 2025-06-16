@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { API_BASE_URL } from '../config/apiConfig';
 
 const OrderItem = ({ order }) => {
   // 订单状态映射
@@ -44,7 +45,7 @@ const OrderItem = ({ order }) => {
             <div className="w-20 h-20 bg-gray-200 rounded overflow-hidden">
               {order.phone.images && order.phone.images[0] && (
                 <img
-                  src={order.phone.images[0]}
+                  src={`${API_BASE_URL}${order.phone.images[0]}`}
                   alt={order.phone.title}
                   className="w-full h-full object-cover"
                 />
@@ -65,7 +66,7 @@ const OrderItem = ({ order }) => {
               {order.phoneImages && order.phoneImages.map((image, index) => (
                 <div key={index} className="w-20 h-20 bg-gray-200 rounded overflow-hidden">
                   <img
-                    src={image}
+                    src={`${API_BASE_URL}${image}`}
                     alt={`回收手机图片 ${index + 1}`}
                     className="w-full h-full object-cover"
                   />

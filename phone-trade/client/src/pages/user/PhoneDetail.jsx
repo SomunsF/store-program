@@ -6,6 +6,7 @@ import { HeartIcon as HeartSolid } from '@heroicons/react/24/solid';
 import phoneService from '../../services/phoneService';
 import userService from '../../services/userService';
 import orderService from '../../services/orderService';
+import { API_BASE_URL } from '../../config/apiConfig';
 
 const PhoneDetail = ({ user }) => {
   const { id } = useParams();
@@ -135,7 +136,7 @@ const PhoneDetail = ({ user }) => {
         {/* 商品图片 */}
         <div className="relative">
           <img
-            src={phone.images[activeImage]}
+            src={`${API_BASE_URL}${phone.images[activeImage]}`}
             alt={phone.title}
             className="w-full h-64 object-cover sm:h-96"
           />
@@ -165,7 +166,7 @@ const PhoneDetail = ({ user }) => {
                 onClick={() => setActiveImage(index)}
               >
                 <img
-                  src={image}
+                  src={`${API_BASE_URL}${image}`}
                   alt={`${phone.title} - 图片 ${index + 1}`}
                   className="w-full h-full object-cover"
                 />

@@ -11,6 +11,7 @@ import {
 import userService from '../../services/userService';
 import orderService from '../../services/orderService';
 import OrderItem from '../../components/OrderItem';
+import { API_BASE_URL } from '../../config/apiConfig';
 
 const Profile = ({ user }) => {
   const navigate = useNavigate();
@@ -252,7 +253,7 @@ const Profile = ({ user }) => {
                       <div className="w-24 h-24 bg-gray-200">
                         {item.phone.images && item.phone.images[0] && (
                           <img
-                            src={item.phone.images[0]}
+                            src={`${API_BASE_URL}${item.phone.images[0]}`}
                             alt={item.phone.title}
                             className="w-full h-full object-cover"
                           />
@@ -305,7 +306,7 @@ const Profile = ({ user }) => {
                       <div className="w-24 h-24 bg-gray-200">
                         {item.phone.images && item.phone.images[0] && (
                           <img
-                            src={item.phone.images[0]}
+                            src={`${API_BASE_URL}${item.phone.images[0]}`}
                             alt={item.phone.title}
                             className="w-full h-full object-cover"
                           />

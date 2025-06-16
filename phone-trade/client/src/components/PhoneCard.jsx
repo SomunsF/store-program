@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { API_BASE_URL } from '../config/apiConfig';
 
 const PhoneCard = ({ phone }) => {
   // 价格折扣百分比
@@ -12,7 +13,7 @@ const PhoneCard = ({ phone }) => {
       <div className="card hover:shadow-lg transition-shadow duration-300">
         <div className="relative pb-[75%] overflow-hidden">
           <img
-            src={phone.images[0]}
+            src={`${API_BASE_URL}${phone.images[0]}`}
             alt={phone.title}
             className="absolute inset-0 w-full h-full object-cover"
           />

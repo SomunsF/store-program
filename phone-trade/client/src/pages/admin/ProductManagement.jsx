@@ -9,6 +9,7 @@ import {
   XMarkIcon,
 } from '@heroicons/react/24/outline';
 import phoneService from '../../services/phoneService';
+import { API_BASE_URL } from '../../config/apiConfig';
 
 const ProductManagement = () => {
   const [phones, setPhones] = useState([]);
@@ -137,7 +138,7 @@ const ProductManagement = () => {
               <div className="flex items-center justify-between">
                 <div className="flex items-center">
                   <img
-                    src={phone.images[0]}
+                    src={`${API_BASE_URL}${phone.images[0]}`}
                     alt={phone.title}
                     className="h-12 w-12 object-cover rounded"
                   />
