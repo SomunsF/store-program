@@ -1,0 +1,92 @@
+[
+  {
+    "title": "iPhone 13 Pro 256GB 午夜色 9成新",
+    "brand": "Apple",
+    "model": "iPhone 13 Pro",
+    "price": 5299,
+    "originalPrice": 7999,
+    "images": [
+      "/uploads/iphone13pro-1.jpg",
+      "/uploads/iphone13pro-2.jpg"
+    ],
+    "condition": "几乎全新",
+    "storage": "256GB",
+    "color": "午夜色",
+    "description": "购买不到半年，无磕碰无划痕，电池健康度95%以上，配件齐全，原包装盒。"
+  },
+  {
+    "title": "小米12S Ultra 512GB 黑色 95新",
+    "brand": "小米",
+    "model": "12S Ultra",
+    "price": 4599,
+    "originalPrice": 6999,
+    "images": [
+      "/uploads/mi12sultra-1.jpg",
+      "/uploads/mi12sultra-2.jpg"
+    ],
+    "condition": "良好",
+    "storage": "512GB",
+    "color": "黑色",
+    "description": "徕卡相机，骁龙8+处理器，使用3个月，无划痕，原厂配件齐全。"
+  },
+  {
+    "title": "华为P50 Pro 256GB 曜金黑 全新未拆封",
+    "brand": "华为",
+    "model": "P50 Pro",
+    "price": 5899,
+    "originalPrice": 6488,
+    "images": [
+      "/uploads/huaweip50pro-1.jpg",
+      "/uploads/huaweip50pro-2.jpg"
+    ],
+    "condition": "全新",
+    "storage": "256GB",
+    "color": "曜金黑",
+    "description": "全新未拆封，原厂正品，官方保修一年，支持鸿蒙系统。"
+  },
+  {
+    "title": "三星Galaxy S22 Ultra 512GB 幻影黑 9成新",
+    "brand": "三星",
+    "model": "Galaxy S22 Ultra",
+    "price": 6299,
+    "originalPrice": 9699,
+    "images": [
+      "/uploads/samsungs22ultra-1.jpg",
+      "/uploads/samsungs22ultra-2.jpg"
+    ],
+    "condition": "几乎全新",
+    "storage": "512GB",
+    "color": "幻影黑",
+    "description": "骁龙8 Gen 1处理器，使用4个月，机身完好，配件齐全。"
+  },
+  {
+    "title": "OPPO Find X5 Pro 256GB 陶瓷白 95新",
+    "brand": "OPPO",
+    "model": "Find X5 Pro",
+    "price": 3899,
+    "originalPrice": 6299,
+    "images": [
+      "/uploads/oppofindx5pro-1.jpg",
+      "/uploads/oppofindx5pro-2.jpg"
+    ],
+    "condition": "良好",
+    "storage": "256GB",
+    "color": "陶瓷白",
+    "description": "哈苏影像系统，高通骁龙8旗舰处理器，轻微使用痕迹，原厂包装盒。"
+  },
+  {
+    "title": "vivo X80 Pro 512GB 宇宙黑 95新",
+    "brand": "vivo",
+    "model": "X80 Pro",
+    "price": 4599,
+    "originalPrice": 6999,
+    "images": [
+      "/uploads/vivox80pro-1.jpg",
+      "/uploads/vivox80pro-2.jpg"
+    ],
+    "condition": "良好",
+    "storage": "512GB",
+    "color": "宇宙黑",
+    "description": "蔡司光学镜头，骁龙8 Gen 1处理器，屏幕完美，无划痕磕碰。"
+  }
+] 

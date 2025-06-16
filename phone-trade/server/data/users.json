@@ -1,0 +1,30 @@
+[
+  {
+    "phone": "13800138000",
+    "password": "$2a$10$KsrG5zSwJFXJGCDhhLDZ0.6uKxA6Gk3j0fcA3BXeKh.GwFHVEVhMC",
+    "username": "张三",
+    "role": "user",
+    "createdAt": "2023-07-15T08:30:00.000Z"
+  },
+  {
+    "phone": "13900139000",
+    "password": "$2a$10$KsrG5zSwJFXJGCDhhLDZ0.6uKxA6Gk3j0fcA3BXeKh.GwFHVEVhMC",
+    "username": "李四",
+    "role": "user",
+    "createdAt": "2023-07-16T09:15:00.000Z"
+  },
+  {
+    "phone": "13700137000",
+    "password": "$2a$10$KsrG5zSwJFXJGCDhhLDZ0.6uKxA6Gk3j0fcA3BXeKh.GwFHVEVhMC",
+    "username": "王五",
+    "role": "user",
+    "createdAt": "2023-07-17T10:20:00.000Z"
+  },
+  {
+    "phone": "admin",
+    "password": "$2a$10$KsrG5zSwJFXJGCDhhLDZ0.6uKxA6Gk3j0fcA3BXeKh.GwFHVEVhMC",
+    "username": "管理员",
+    "role": "admin",
+    "createdAt": "2023-07-01T00:00:00.000Z"
+  }
+] 

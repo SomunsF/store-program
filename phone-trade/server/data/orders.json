@@ -1,0 +1,43 @@
+[
+  {
+    "user": "用户ID1",
+    "type": "recycle",
+    "phoneBrand": "Apple",
+    "phoneModel": "iPhone 12",
+    "phoneCondition": "良好",
+    "phoneImages": [
+      "/uploads/recycle-iphone12-1.jpg",
+      "/uploads/recycle-iphone12-2.jpg"
+    ],
+    "description": "使用一年多，电池健康90%，有轻微划痕，配件齐全。",
+    "status": "pending",
+    "createdAt": "2023-07-18T10:30:00.000Z"
+  },
+  {
+    "user": "用户ID2",
+    "type": "recycle",
+    "phoneBrand": "小米",
+    "phoneModel": "小米11",
+    "phoneCondition": "一般",
+    "phoneImages": [
+      "/uploads/recycle-mi11-1.jpg"
+    ],
+    "description": "使用两年，电池不太好，背面有明显划痕，功能正常。",
+    "status": "processing",
+    "createdAt": "2023-07-17T14:20:00.000Z"
+  },
+  {
+    "user": "用户ID1",
+    "type": "purchase",
+    "phone": "手机ID1",
+    "status": "completed",
+    "createdAt": "2023-07-15T09:45:00.000Z"
+  },
+  {
+    "user": "用户ID3",
+    "type": "purchase",
+    "phone": "手机ID2",
+    "status": "pending",
+    "createdAt": "2023-07-19T16:10:00.000Z"
+  }
+] 
