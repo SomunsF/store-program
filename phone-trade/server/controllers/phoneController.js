@@ -52,12 +52,16 @@ exports.createPhone = async (req, res) => {
       model,
       price,
       originalPrice,
-      images,
       condition,
       storage,
       color,
       description
     } = req.body;
+
+    let images = [];
+    if (req.files) {
+      images = req.files.map(file => `/uploads/${file.filename}`);
+    }
 
     const phone = await Phone.create({
       title,
@@ -83,20 +87,49 @@ exports.createPhone = async (req, res) => {
 // @route   PUT /api/phones/:id
 // @access  Private/Admin
 exports.updatePhone = async (req, res) => {
+  // --- 诊断日志 ---
+  console.log('--- 更新商品请求 ---');
+  console.log('Request Body:', req.body);
+  console.log('Request Files:', req.files);
+  console.log('--------------------');
+  // --- 结束日志 ---
+
   try {
     const phone = await Phone.findById(req.params.id);
 
     if (phone) {
-      phone.title = req.body.title || phone.title;
-      phone.brand = req.body.brand || phone.brand;
-      phone.model = req.body.model || phone.model;
-      phone.price = req.body.price ?? phone.price;
-      phone.originalPrice = req.body.originalPrice ?? phone.originalPrice;
-      phone.images = req.body.images || phone.images;
-      phone.condition = req.body.condition || phone.condition;
-      phone.storage = req.body.storage || phone.storage;
-      phone.color = req.body.color || phone.color;
-      phone.description = req.body.description || phone.description;
+      const {
+        title,
+        brand,
+        model,
+        price,
+        originalPrice,
+        condition,
+        storage,
+        color,
+        description,
+        existingImages
+      } = req.body;
+
+      let newImages = [];
+      if (req.files) {
+        newImages = req.files.map(file => `/uploads/${file.filename}`);
+      }
+      
+      let updatedImages = [];
+      const existing = typeof existingImages === 'string' ? [existingImages] : existingImages || [];
+      updatedImages = [...existing, ...newImages];
+      
+      phone.title = title || phone.title;
+      phone.brand = brand || phone.brand;
+      phone.model = model || phone.model;
+      phone.price = price ?? phone.price;
+      phone.originalPrice = originalPrice ?? phone.originalPrice;
+      phone.images = updatedImages;
+      phone.condition = condition || phone.condition;
+      phone.storage = storage || phone.storage;
+      phone.color = color || phone.color;
+      phone.description = description || phone.description;
 
       const updatedPhone = await phone.save();
       res.json(updatedPhone);

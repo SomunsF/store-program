@@ -3,6 +3,7 @@ description:
 globs: 
 alwaysApply: false
 ---
+注意这是在windows系统下，不要用&&
 编写一个前后端分离的二手手机交易与回收 Web 应用，分为用户端和管理端两个界面，具体要求如下：
 
 【整体要求】

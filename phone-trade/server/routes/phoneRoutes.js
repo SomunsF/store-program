@@ -7,18 +7,19 @@ const {
   updatePhone,
   deletePhone,
   addToFavorite,
-  removeFromFavorite
+  removeFromFavorite,
 } = require('../controllers/phoneController');
 const { protect, admin } = require('../middleware/authMiddleware');
+const upload = require('../middleware/uploadMiddleware');
 
 // 获取所有手机商品
-router.route('/').get(getPhones).post(protect, admin, createPhone);
+router.route('/').get(getPhones).post(protect, admin, upload.array('images', 10), createPhone);
 
 // 对单个手机商品的操作
 router
   .route('/:id')
   .get(getPhoneById)
-  .put(protect, admin, updatePhone)
+  .put(protect, admin, upload.array('images', 10), updatePhone)
   .delete(protect, admin, deletePhone);
 
 // 收藏相关

@@ -61,9 +61,14 @@ const removeFromFavorite = async (phoneId) => {
 };
 
 // 添加新手机商品 (仅管理员)
-const createPhone = async (phoneData) => {
+const createPhone = async (formData) => {
+  const token = localStorage.getItem('token');
   try {
-    const response = await axios.post(API_URL, phoneData, getConfig());
+    const response = await axios.post(API_URL, formData, {
+      headers: {
+        Authorization: token ? `Bearer ${token}` : '',
+      },
+    });
     return response.data;
   } catch (error) {
     throw error.response?.data?.message || '添加商品失败';
@@ -71,9 +76,14 @@ const createPhone = async (phoneData) => {
 };
 
 // 更新手机商品 (仅管理员)
-const updatePhone = async (id, phoneData) => {
+const updatePhone = async (id, formData) => {
+  const token = localStorage.getItem('token');
   try {
-    const response = await axios.put(`${API_URL}/${id}`, phoneData, getConfig());
+    const response = await axios.put(`${API_URL}/${id}`, formData, {
+      headers: {
+        Authorization: token ? `Bearer ${token}` : '',
+      },
+    });
     return response.data;
   } catch (error) {
     throw error.response?.data?.message || '更新商品失败';

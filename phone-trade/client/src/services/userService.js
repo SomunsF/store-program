@@ -57,11 +57,33 @@ const updateUserProfile = async (userData) => {
   }
 };
 
+// 更新用户 (仅管理员)
+const updateUser = async (id, userData) => {
+  try {
+    const response = await axios.put(`${API_URL}/${id}`, userData, getConfig());
+    return response.data;
+  } catch (error) {
+    throw error.response?.data?.message || '更新用户失败';
+  }
+};
+
+// 删除用户 (仅管理员)
+const deleteUser = async (id) => {
+  try {
+    const response = await axios.delete(`${API_URL}/${id}`, getConfig());
+    return response.data;
+  } catch (error) {
+    throw error.response?.data?.message || '删除用户失败';
+  }
+};
+
 const userService = {
   getUsers,
   getBrowsingHistory,
   getFavorites,
-  updateUserProfile
+  updateUserProfile,
+  updateUser,
+  deleteUser,
 };
 
 export default userService; 

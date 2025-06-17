@@ -1,12 +1,127 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
-import { ArrowPathIcon } from '@heroicons/react/24/outline';
+import {
+  ArrowPathIcon,
+  PencilIcon,
+  TrashIcon,
+} from '@heroicons/react/24/outline';
 import userService from '../../services/userService';
+
+// 用户编辑模态框
+const UserEditModal = ({ user, onClose, onSave }) => {
+  const [formData, setFormData] = useState({
+    username: user.username,
+    phone: user.phone,
+    role: user.role,
+    password: '',
+  });
+
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onSave(formData);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+      <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-md">
+        <h3 className="text-lg font-medium leading-6 text-gray-900 mb-4">
+          编辑用户
+        </h3>
+        <form onSubmit={handleSubmit}>
+          <div className="space-y-4">
+            <div>
+              <label
+                htmlFor="username"
+                className="block text-sm font-medium text-gray-700"
+              >
+                用户名
+              </label>
+              <input
+                type="text"
+                name="username"
+                id="username"
+                className="input mt-1"
+                value={formData.username}
+                onChange={handleChange}
+                required
+              />
+            </div>
+            <div>
+              <label
+                htmlFor="phone"
+                className="block text-sm font-medium text-gray-700"
+              >
+                手机号
+              </label>
+              <input
+                type="text"
+                name="phone"
+                id="phone"
+                className="input mt-1"
+                value={formData.phone}
+                onChange={handleChange}
+                required
+              />
+            </div>
+            <div>
+              <label
+                htmlFor="role"
+                className="block text-sm font-medium text-gray-700"
+              >
+                角色
+              </label>
+              <select
+                id="role"
+                name="role"
+                className="input mt-1"
+                value={formData.role}
+                onChange={handleChange}
+              >
+                <option value="user">普通用户</option>
+                <option value="admin">管理员</option>
+              </select>
+            </div>
+            <div>
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-gray-700"
+              >
+                新密码
+              </label>
+              <input
+                type="password"
+                name="password"
+                id="password"
+                className="input mt-1"
+                value={formData.password}
+                onChange={handleChange}
+                placeholder="留空则不修改密码"
+              />
+            </div>
+          </div>
+          <div className="mt-6 flex justify-end space-x-3">
+            <button type="button" className="btn-secondary" onClick={onClose}>
+              取消
+            </button>
+            <button type="submit" className="btn-primary">
+              保存
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
 
 const UserManagement = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [editingUser, setEditingUser] = useState(null);
 
   useEffect(() => {
     fetchUsers();
@@ -19,9 +134,46 @@ const UserManagement = () => {
       setUsers(data);
     } catch (error) {
       console.error('获取用户列表失败:', error);
-      toast.error('获取用户列表失败');
+      toast.error(error.toString());
     } finally {
       setLoading(false);
+    }
+  };
+
+  // 处理编辑
+  const handleEdit = (user) => {
+    setEditingUser(user);
+  };
+
+  // 处理删除
+  const handleDelete = async (userId) => {
+    if (window.confirm('确定要删除此用户吗？此操作不可撤销。')) {
+      try {
+        await userService.deleteUser(userId);
+        toast.success('用户已删除');
+        fetchUsers(); // 重新加载用户列表
+      } catch (error) {
+        console.error('删除用户失败:', error);
+        toast.error(error.toString());
+      }
+    }
+  };
+
+  // 处理保存
+  const handleSave = async (updatedData) => {
+    try {
+      const dataToUpdate = { ...updatedData };
+      if (!dataToUpdate.password) {
+        delete dataToUpdate.password;
+      }
+
+      await userService.updateUser(editingUser._id, dataToUpdate);
+      toast.success('用户信息已更新');
+      setEditingUser(null);
+      fetchUsers(); // 重新加载用户列表
+    } catch (error) {
+      console.error('更新用户失败:', error);
+      toast.error(error.toString());
     }
   };
 
@@ -31,7 +183,7 @@ const UserManagement = () => {
     return date.toLocaleDateString('zh-CN', {
       year: 'numeric',
       month: 'long',
-      day: 'numeric'
+      day: 'numeric',
     });
   };
 
@@ -53,19 +205,29 @@ const UserManagement = () => {
 
   return (
     <div>
-      <div className="mb-6">
-        <h2 className="text-lg font-medium text-gray-900">用户管理</h2>
-        <p className="mt-1 text-sm text-gray-500">
-          查看和管理平台所有用户信息
-        </p>
-      </div>
+      {editingUser && (
+        <UserEditModal
+          user={editingUser}
+          onClose={() => setEditingUser(null)}
+          onSave={handleSave}
+        />
+      )}
 
-      {/* 搜索框 */}
-      <div className="mb-6">
-        <div className="relative rounded-md shadow-sm">
+      <div className="mb-6 flex justify-between items-center">
+        <div>
+          <h2 className="text-lg font-medium text-gray-900">用户管理</h2>
+          <p className="mt-1 text-sm text-gray-500">
+            查看和管理平台所有用户信息
+          </p>
+        </div>
+      </div>
+      
+      {/* 搜索和刷新 */}
+      <div className="mb-6 flex items-center justify-between">
+        <div className="relative rounded-md shadow-sm flex-grow">
           <input
             type="text"
-            className="input pr-10"
+            className="input pr-10 w-full"
             placeholder="搜索用户名或手机号..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -87,6 +249,13 @@ const UserManagement = () => {
             </svg>
           </div>
         </div>
+        <button
+          onClick={fetchUsers}
+          className="ml-3 btn-secondary p-2"
+          aria-label="刷新列表"
+        >
+          <ArrowPathIcon className="h-5 w-5" />
+        </button>
       </div>
 
       {/* 用户列表 */}
@@ -113,7 +282,7 @@ const UserManagement = () => {
                       <div className="text-sm text-gray-500">{user.phone}</div>
                     </div>
                   </div>
-                  <div className="flex items-center">
+                  <div className="hidden md:flex items-center">
                     <span
                       className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
                         user.role === 'admin'
@@ -123,9 +292,25 @@ const UserManagement = () => {
                     >
                       {user.role === 'admin' ? '管理员' : '普通用户'}
                     </span>
-                    <span className="ml-4 text-sm text-gray-500">
+                    <span className="ml-4 text-sm text-gray-500 hidden lg:block">
                       注册于 {formatDate(user.createdAt)}
                     </span>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <button
+                      onClick={() => handleEdit(user)}
+                      className="text-gray-400 hover:text-primary-600"
+                      aria-label="编辑用户"
+                    >
+                      <PencilIcon className="h-5 w-5" />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(user._id)}
+                      className="text-gray-400 hover:text-red-600"
+                      aria-label="删除用户"
+                    >
+                      <TrashIcon className="h-5 w-5" />
+                    </button>
                   </div>
                 </div>
               </li>

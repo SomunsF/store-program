@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
 import { toast } from 'react-toastify';
 import {
   ArrowPathIcon,
@@ -7,22 +6,214 @@ import {
   TrashIcon,
   PlusIcon,
   XMarkIcon,
+  VideoCameraIcon,
+  PhotoIcon,
 } from '@heroicons/react/24/outline';
 import phoneService from '../../services/phoneService';
 import { API_BASE_URL } from '../../config/apiConfig';
+
+const ProductModal = ({ phone, onClose, onSave }) => {
+  const [formData, setFormData] = useState({
+    title: '',
+    brand: '',
+    model: '',
+    price: '',
+    originalPrice: '',
+    condition: '良好',
+    storage: '',
+    color: '',
+    description: '',
+  });
+  const [existingImages, setExistingImages] = useState([]);
+  const [newFiles, setNewFiles] = useState([]);
+
+  useEffect(() => {
+    if (phone) {
+      setFormData({
+        title: phone.title || '',
+        brand: phone.brand || '',
+        model: phone.model || '',
+        price: phone.price || '',
+        originalPrice: phone.originalPrice || '',
+        condition: phone.condition || '良好',
+        storage: phone.storage || '',
+        color: phone.color || '',
+        description: phone.description || '',
+      });
+      setExistingImages(phone.images || []);
+    }
+  }, [phone]);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleFileChange = (e) => {
+    setNewFiles([...e.target.files]);
+  };
+
+  const removeExistingImage = (index) => {
+    setExistingImages(existingImages.filter((_, i) => i !== index));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const submissionData = new FormData();
+
+    Object.keys(formData).forEach((key) => {
+      submissionData.append(key, formData[key]);
+    });
+
+    existingImages.forEach((image) => {
+      submissionData.append('existingImages', image);
+    });
+
+    newFiles.forEach((file) => {
+      submissionData.append('images', file);
+    });
+
+    onSave(submissionData, phone?._id);
+  };
+
+  const labelMapping = {
+    title: '标题',
+    brand: '品牌',
+    model: '型号',
+    price: '价格',
+    originalPrice: '原价',
+    condition: '成色',
+    storage: '内存',
+    color: '颜色',
+    description: '描述',
+  };
+
+  const renderFilePreview = (url) => {
+    const extension = url.split('.').pop().toLowerCase();
+    if (['mp4', 'mov', 'avi', 'wmv'].includes(extension)) {
+      return <VideoCameraIcon className="h-full w-full text-gray-400" />;
+    }
+    return (
+      <img
+        src={`${API_BASE_URL}${url}`}
+        alt="Preview"
+        className="h-full w-full object-cover"
+      />
+    );
+  };
+
+  return (
+    <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex justify-center items-center z-50">
+      <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-lg max-h-screen overflow-y-auto">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-medium">{phone ? '编辑商品' : '添加新商品'}</h3>
+          <button onClick={onClose}>
+            <XMarkIcon className="h-6 w-6" />
+          </button>
+        </div>
+        <form onSubmit={handleSubmit}>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {Object.keys(formData).map((key) => (
+              <div
+                key={key}
+                className={key === 'description' || key === 'title' ? 'sm:col-span-2' : ''}
+              >
+                <label className="block text-sm font-medium text-gray-700 capitalize">
+                  {labelMapping[key] || key}
+                </label>
+                {key === 'description' ? (
+                  <textarea name={key} value={formData[key]} onChange={handleChange} className="input" />
+                ) : (
+                  <input
+                    type={key === 'price' || key === 'originalPrice' ? 'number' : 'text'}
+                    name={key}
+                    value={formData[key]}
+                    onChange={handleChange}
+                    className="input"
+                  />
+                )}
+              </div>
+            ))}
+          </div>
+
+          <div className="sm:col-span-2 mt-4">
+            <label className="block text-sm font-medium text-gray-700">
+              已有图片/视频
+            </label>
+            <div className="mt-2 grid grid-cols-3 gap-4">
+              {existingImages.map((url, index) => (
+                <div key={index} className="relative group">
+                  <div className="h-24 w-full rounded-md bg-gray-100 flex items-center justify-center overflow-hidden">
+                    {renderFilePreview(url)}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => removeExistingImage(index)}
+                    className="absolute top-0 right-0 bg-red-600 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <XMarkIcon className="h-4 w-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="sm:col-span-2 mt-4">
+            <label className="block text-sm font-medium text-gray-700">
+              上传新图片/视频
+            </label>
+            <div className="mt-2 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
+              <div className="space-y-1 text-center">
+                <PhotoIcon className="mx-auto h-12 w-12 text-gray-400" />
+                <div className="flex text-sm text-gray-600">
+                  <label
+                    htmlFor="file-upload"
+                    className="relative cursor-pointer bg-white rounded-md font-medium text-primary-600 hover:text-primary-500 focus-within:outline-none"
+                  >
+                    <span>上传文件</span>
+                    <input
+                      id="file-upload"
+                      name="images"
+                      type="file"
+                      multiple
+                      className="sr-only"
+                      onChange={handleFileChange}
+                      accept="image/*,video/*"
+                    />
+                  </label>
+                  <p className="pl-1">或拖拽到此</p>
+                </div>
+                <p className="text-xs text-gray-500">
+                  支持 PNG, JPG, GIF, MP4 等格式
+                </p>
+              </div>
+            </div>
+            {newFiles.length > 0 && (
+              <div className="mt-2 text-sm text-gray-500">
+                已选择 {newFiles.length} 个新文件。
+              </div>
+            )}
+          </div>
+
+          <div className="mt-6 flex justify-end space-x-4">
+            <button type="button" onClick={onClose} className="btn btn-secondary">
+              取消
+            </button>
+            <button type="submit" className="btn btn-primary">
+              保存
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
 
 const ProductManagement = () => {
   const [phones, setPhones] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingPhone, setEditingPhone] = useState(null);
-
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm();
 
   useEffect(() => {
     fetchPhones();
@@ -42,54 +233,27 @@ const ProductManagement = () => {
 
   const openModal = (phone = null) => {
     setEditingPhone(phone);
-    if (phone) {
-      reset({
-        ...phone,
-        images: phone.images.join(', '),
-      });
-    } else {
-      reset({
-        title: '',
-        brand: '',
-        model: '',
-        price: '',
-        originalPrice: '',
-        images: '',
-        condition: '良好',
-        storage: '',
-        color: '',
-        description: '',
-      });
-    }
     setIsModalOpen(true);
   };
 
   const closeModal = () => {
     setIsModalOpen(false);
     setEditingPhone(null);
-    reset();
   };
 
-  const onSubmit = async (data) => {
-    const phoneData = {
-      ...data,
-      images: data.images.split(',').map((item) => item.trim()),
-      price: Number(data.price),
-      originalPrice: Number(data.originalPrice) || null,
-    };
-
+  const handleSave = async (formData, id) => {
     try {
-      if (editingPhone) {
-        await phoneService.updatePhone(editingPhone._id, phoneData);
+      if (id) {
+        await phoneService.updatePhone(id, formData);
         toast.success('商品更新成功');
       } else {
-        await phoneService.createPhone(phoneData);
+        await phoneService.createPhone(formData);
         toast.success('商品添加成功');
       }
       fetchPhones();
       closeModal();
     } catch (error) {
-      toast.error(editingPhone ? '更新失败' : '添加失败');
+      toast.error(id ? '更新失败' : '添加失败');
     }
   };
 
@@ -137,11 +301,19 @@ const ProductManagement = () => {
             <li key={phone._id} className="px-6 py-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center">
-                  <img
-                    src={`${API_BASE_URL}${phone.images[0]}`}
-                    alt={phone.title}
-                    className="h-12 w-12 object-cover rounded"
-                  />
+                  <div className="h-12 w-12 object-cover rounded bg-gray-100 flex items-center justify-center">
+                  {phone.images && phone.images.length > 0 ? (
+                      phone.images[0].endsWith('.mp4') ? (
+                          <VideoCameraIcon className="h-8 w-8 text-gray-400" />
+                      ) : (
+                          <img
+                              src={`${API_BASE_URL}${phone.images[0]}`}
+                              alt={phone.title}
+                              className="h-full w-full object-cover rounded"
+                          />
+                      )
+                  ) : <PhotoIcon className="h-8 w-8 text-gray-300" />}
+                  </div>
                   <div className="ml-4">
                     <div className="text-sm font-medium text-gray-900">
                       {phone.title}
@@ -175,75 +347,7 @@ const ProductManagement = () => {
       </div>
 
       {isModalOpen && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex justify-center items-center z-50">
-          <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-lg max-h-screen overflow-y-auto">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-medium">
-                {editingPhone ? '编辑商品' : '添加新商品'}
-              </h3>
-              <button onClick={closeModal}>
-                <XMarkIcon className="h-6 w-6" />
-              </button>
-            </div>
-            <form onSubmit={handleSubmit(onSubmit)}>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div className="sm:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700">标题</label>
-                  <input {...register('title', { required: true })} className="input" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">品牌</label>
-                  <input {...register('brand', { required: true })} className="input" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">型号</label>
-                  <input {...register('model', { required: true })} className="input" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">价格</label>
-                  <input type="number" {...register('price', { required: true, valueAsNumber: true })} className="input" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">原价 (选填)</label>
-                  <input type="number" {...register('originalPrice', { valueAsNumber: true })} className="input" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">存储容量</label>
-                  <input {...register('storage', { required: true })} className="input" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">颜色</label>
-                  <input {...register('color', { required: true })} className="input" />
-                </div>
-                 <div className="sm:col-span-2">
-                   <label className="block text-sm font-medium text-gray-700">成色</label>
-                   <select {...register('condition', { required: true })} className="input">
-                     <option>全新</option>
-                     <option>几乎全新</option>
-                     <option>良好</option>
-                     <option>一般</option>
-                   </select>
-                 </div>
-                <div className="sm:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700">图片URL (用逗号分隔)</label>
-                  <textarea {...register('images', { required: true })} className="input" />
-                </div>
-                <div className="sm:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700">描述</label>
-                  <textarea {...register('description', { required: true })} className="input" />
-                </div>
-              </div>
-              <div className="mt-6 flex justify-end space-x-4">
-                <button type="button" onClick={closeModal} className="btn btn-secondary">
-                  取消
-                </button>
-                <button type="submit" className="btn btn-primary">
-                  保存
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+        <ProductModal phone={editingPhone} onClose={closeModal} onSave={handleSave} />
       )}
     </div>
   );
