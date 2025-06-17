@@ -87,12 +87,36 @@ const updateOrderStatus = async (orderId, status) => {
   }
 };
 
+const updateOrder = async (orderId, updateData) => {
+  try {
+    const response = await axios.put(
+      `${API_URL}/${orderId}`,
+      updateData,
+      getJsonConfig()
+    );
+    return response.data;
+  } catch (error) {
+    throw error.response?.data?.message || '更新订单失败';
+  }
+};
+
+const deleteOrder = async (orderId) => {
+  try {
+    const response = await axios.delete(`${API_URL}/${orderId}`, getConfig());
+    return response.data;
+  } catch (error) {
+    throw error.response?.data?.message || '删除订单失败';
+  }
+};
+
 const orderService = {
   createRecycleOrder,
   createPurchaseOrder,
   getMyOrders,
   getAllOrders,
-  updateOrderStatus
+  updateOrderStatus,
+  updateOrder,
+  deleteOrder,
 };
 
 export default orderService; 

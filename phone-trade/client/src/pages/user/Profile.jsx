@@ -1,336 +1,266 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { toast } from 'react-toastify';
 import {
-  UserIcon,
+  UserCircleIcon,
+  CreditCardIcon,
   ClockIcon,
   HeartIcon,
-  ArrowPathIcon
+  ArrowPathIcon,
+  ArrowRightOnRectangleIcon,
+  ChevronLeftIcon
 } from '@heroicons/react/24/outline';
 import userService from '../../services/userService';
 import orderService from '../../services/orderService';
 import OrderItem from '../../components/OrderItem';
 import { API_BASE_URL } from '../../config/apiConfig';
+import PhoneCard from '../../components/PhoneCard';
 
 const Profile = ({ user }) => {
   const navigate = useNavigate();
-  const { register, handleSubmit, formState: { errors }, reset } = useForm({
-    defaultValues: {
-      username: user?.username || '',
-      password: ''
-    }
-  });
-
-  const [activeTab, setActiveTab] = useState('profile');
+  const { register, handleSubmit, formState: { errors }, setValue } = useForm();
+  
+  const [view, setView] = useState('main'); // 'main', 'orders', 'profile', 'history', 'favorites'
   const [loading, setLoading] = useState(false);
   const [updateLoading, setUpdateLoading] = useState(false);
-  const [orders, setOrders] = useState([]);
-  const [browsingHistory, setBrowsingHistory] = useState([]);
-  const [favorites, setFavorites] = useState([]);
+  const [data, setData] = useState({ orders: [], history: [], favorites: [] });
 
-  // 获取数据
+  useEffect(() => {
+    if (user) {
+      setValue('username', user.username);
+    }
+  }, [user, setValue]);
+
   useEffect(() => {
     const fetchData = async () => {
+      if (!user || view === 'main' || view === 'profile') return;
+      
+      setLoading(true);
       try {
-        setLoading(true);
-        
-        // 根据激活的标签页加载不同的数据
-        if (activeTab === 'orders') {
-          const ordersData = await orderService.getMyOrders();
-          setOrders(ordersData);
-        } else if (activeTab === 'history') {
-          const historyData = await userService.getBrowsingHistory();
-          setBrowsingHistory(historyData);
-        } else if (activeTab === 'favorites') {
-          const favoritesData = await userService.getFavorites();
-          setFavorites(favoritesData);
+        let result;
+        if (view === 'orders') {
+          result = await orderService.getMyOrders();
+          setData(prev => ({ ...prev, orders: result }));
+        } else if (view === 'history') {
+          result = await userService.getBrowsingHistory();
+          setData(prev => ({ ...prev, history: result }));
+        } else if (view === 'favorites') {
+          result = await userService.getFavorites();
+          setData(prev => ({ ...prev, favorites: result }));
         }
       } catch (error) {
-        console.error('获取数据失败:', error);
-        toast.error('获取数据失败，请稍后再试');
+        toast.error('数据加载失败，请稍后重试。');
       } finally {
         setLoading(false);
       }
     };
-
     fetchData();
-  }, [activeTab]);
+  }, [view, user]);
 
-  // 更新用户资料
-  const updateProfile = async (data) => {
+  const updateProfile = async (formData) => {
+    setUpdateLoading(true);
     try {
-      setUpdateLoading(true);
-      await userService.updateUserProfile(data);
-      toast.success('资料更新成功');
-      
-      // 如果密码已更新，清空密码字段
-      if (data.password) {
-        reset({ username: data.username, password: '' });
+      await userService.updateUserProfile(formData);
+      toast.success('个人资料已更新。');
+      if (formData.password) {
+        setValue('password', '');
       }
+      // Consider a state management solution to refresh user data globally
     } catch (error) {
-      console.error('更新资料失败:', error);
-      toast.error('更新失败，请稍后再试');
+      toast.error('更新失败，请稍后重试。');
     } finally {
       setUpdateLoading(false);
     }
   };
 
-  // 处理退出登录
   const handleLogout = () => {
     localStorage.removeItem('token');
     navigate('/');
     window.location.reload();
   };
+  
+  const navigationItems = [
+    { name: '我的订单', view: 'orders', icon: CreditCardIcon, description: '查看和管理您的订单' },
+    { name: '个人资料', view: 'profile', icon: UserCircleIcon, description: '更新您的账户信息' },
+    { name: '浏览记录', view: 'history', icon: ClockIcon, description: '查看您最近浏览过的商品' },
+    { name: '我的收藏', view: 'favorites', icon: HeartIcon, description: '管理您收藏的商品' },
+  ];
+
+  const renderDetailView = () => {
+    const currentItem = navigationItems.find(item => item.view === view);
+
+    let content;
+    if (loading) {
+      content = <div className="flex justify-center items-center py-20"><ArrowPathIcon className="animate-spin h-8 w-8 text-gray-500" /></div>;
+    } else {
+      switch (view) {
+        case 'profile':
+          content = <ProfileForm user={user} register={register} errors={errors} handleSubmit={handleSubmit(updateProfile)} updateLoading={updateLoading} />;
+          break;
+        case 'orders':
+          content = <OrderList orders={data.orders} />;
+          break;
+        case 'history':
+          content = <ProductList products={data.history.map(item => item.phone)} emptyMessage="你还没有浏览任何商品。" link="/" linkText="去逛逛" />;
+          break;
+        case 'favorites':
+          content = <ProductList products={data.favorites.map(item => item.phone)} emptyMessage="你的收藏夹是空的。" link="/" linkText="发现更多" />;
+          break;
+        default:
+          content = null;
+      }
+    }
+
+    return (
+      <div>
+        <button onClick={() => setView('main')} className="flex items-center text-sm font-medium text-gray-600 hover:text-gray-900 mb-6">
+          <ChevronLeftIcon className="h-5 w-5 mr-2" />
+          返回个人中心
+        </button>
+        <h2 className="text-2xl font-bold text-gray-900 mb-6">{currentItem?.name}</h2>
+        {content}
+      </div>
+    );
+  };
+  
+  if (!user) {
+    return (
+      <div className="text-center py-20">
+        <p>请先 <Link to="/login" className="text-blue-600 hover:underline">登录</Link> 以查看个人中心。</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="container mx-auto px-4 pb-20 pt-4">
-      <div className="max-w-md mx-auto">
-        <h1 className="text-2xl font-bold text-gray-900 mb-6">个人中心</h1>
-        
-        {/* 标签页导航 */}
-        <div className="flex border-b border-gray-200 mb-6">
-          <button
-            className={`px-4 py-2 font-medium text-sm ${
-              activeTab === 'profile'
-                ? 'text-primary-600 border-b-2 border-primary-600'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
-            onClick={() => setActiveTab('profile')}
-          >
-            个人资料
-          </button>
-          <button
-            className={`px-4 py-2 font-medium text-sm ${
-              activeTab === 'orders'
-                ? 'text-primary-600 border-b-2 border-primary-600'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
-            onClick={() => setActiveTab('orders')}
-          >
-            我的订单
-          </button>
-          <button
-            className={`px-4 py-2 font-medium text-sm ${
-              activeTab === 'history'
-                ? 'text-primary-600 border-b-2 border-primary-600'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
-            onClick={() => setActiveTab('history')}
-          >
-            浏览记录
-          </button>
-          <button
-            className={`px-4 py-2 font-medium text-sm ${
-              activeTab === 'favorites'
-                ? 'text-primary-600 border-b-2 border-primary-600'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
-            onClick={() => setActiveTab('favorites')}
-          >
-            我的收藏
-          </button>
-        </div>
-
-        {/* 个人资料 */}
-        {activeTab === 'profile' && (
-          <div className="bg-white rounded-lg shadow-md p-4">
-            <div className="flex items-center mb-6">
-              <div className="bg-gray-200 rounded-full p-3">
-                <UserIcon className="h-6 w-6 text-gray-500" />
-              </div>
-              <div className="ml-4">
-                <h2 className="text-lg font-medium">{user?.username}</h2>
-                <p className="text-sm text-gray-500">{user?.phone}</p>
-              </div>
+    <div className="bg-gray-50 min-h-screen">
+      <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        {view === 'main' ? (
+          <>
+            <div className="text-center mb-12">
+              <UserCircleIcon className="mx-auto h-20 w-20 text-gray-300" />
+              <h1 className="mt-4 text-3xl font-bold text-gray-900">你好, {user.username}</h1>
+              <p className="mt-1 text-md text-gray-500">欢迎回到你的个人中心</p>
             </div>
-
-            <form onSubmit={handleSubmit(updateProfile)}>
-              <div className="mb-4">
-                <label className="block text-gray-700 text-sm font-medium mb-2">
-                  用户名
-                </label>
-                <input
-                  type="text"
-                  className={`input ${errors.username ? 'border-red-500' : ''}`}
-                  {...register('username', { required: '请输入用户名' })}
-                />
-                {errors.username && (
-                  <p className="text-red-500 text-xs mt-1">{errors.username.message}</p>
-                )}
-              </div>
-
-              <div className="mb-4">
-                <label className="block text-gray-700 text-sm font-medium mb-2">
-                  新密码 (不修改请留空)
-                </label>
-                <input
-                  type="password"
-                  className="input"
-                  {...register('password')}
-                  placeholder="输入新密码"
-                />
-              </div>
-
-              <div className="flex justify-between">
-                <button
-                  type="submit"
-                  className="btn btn-primary flex items-center"
-                  disabled={updateLoading}
-                >
-                  {updateLoading ? (
-                    <>
-                      <ArrowPathIcon className="animate-spin h-4 w-4 mr-2" />
-                      更新中...
-                    </>
-                  ) : (
-                    '更新资料'
-                  )}
-                </button>
-                <button
-                  type="button"
-                  onClick={handleLogout}
-                  className="btn bg-red-600 hover:bg-red-700"
-                >
-                  退出登录
-                </button>
-              </div>
-            </form>
-          </div>
-        )}
-
-        {/* 我的订单 */}
-        {activeTab === 'orders' && (
-          <div>
-            {loading ? (
-              <div className="text-center py-10">
-                <ArrowPathIcon className="animate-spin h-8 w-8 mx-auto text-primary-600" />
-                <p className="mt-2 text-gray-500">加载中...</p>
-              </div>
-            ) : orders.length === 0 ? (
-              <div className="text-center py-10 bg-white rounded-lg shadow-md">
-                <ClockIcon className="h-12 w-12 mx-auto text-gray-400" />
-                <p className="mt-2 text-gray-500">暂无订单记录</p>
-                <Link to="/recycle" className="mt-4 inline-block btn btn-primary">
-                  去回收手机
-                </Link>
-              </div>
-            ) : (
-              <div>
-                {orders.map((order) => (
-                  <OrderItem key={order._id} order={order} />
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* 浏览记录 */}
-        {activeTab === 'history' && (
-          <div>
-            {loading ? (
-              <div className="text-center py-10">
-                <ArrowPathIcon className="animate-spin h-8 w-8 mx-auto text-primary-600" />
-                <p className="mt-2 text-gray-500">加载中...</p>
-              </div>
-            ) : browsingHistory.length === 0 ? (
-              <div className="text-center py-10 bg-white rounded-lg shadow-md">
-                <ClockIcon className="h-12 w-12 mx-auto text-gray-400" />
-                <p className="mt-2 text-gray-500">暂无浏览记录</p>
-                <Link to="/" className="mt-4 inline-block btn btn-primary">
-                  去浏览手机
-                </Link>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {browsingHistory.map((item) => (
-                  <Link
-                    key={item._id}
-                    to={`/phone/${item.phone._id}`}
-                    className="block bg-white rounded-lg shadow-md overflow-hidden"
-                  >
-                    <div className="flex">
-                      <div className="w-24 h-24 bg-gray-200">
-                        {item.phone.images && item.phone.images[0] && (
-                          <img
-                            src={`${API_BASE_URL}${item.phone.images[0]}`}
-                            alt={item.phone.title}
-                            className="w-full h-full object-cover"
-                          />
-                        )}
-                      </div>
-                      <div className="p-3 flex-1">
-                        <h3 className="text-sm font-medium text-gray-900 line-clamp-1">
-                          {item.phone.title}
-                        </h3>
-                        <p className="text-sm text-primary-600 font-bold mt-1">
-                          ¥{item.phone.price}
-                        </p>
-                        <p className="text-xs text-gray-500 mt-2">
-                          {new Date(item.createdAt).toLocaleDateString('zh-CN')}
-                        </p>
-                      </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {navigationItems.map((item) => (
+                <div key={item.name} onClick={() => setView(item.view)} className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition-shadow cursor-pointer">
+                  <div className="flex items-start">
+                    <div className="flex-shrink-0">
+                      <item.icon className="h-8 w-8 text-blue-600" />
                     </div>
-                  </Link>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* 我的收藏 */}
-        {activeTab === 'favorites' && (
-          <div>
-            {loading ? (
-              <div className="text-center py-10">
-                <ArrowPathIcon className="animate-spin h-8 w-8 mx-auto text-primary-600" />
-                <p className="mt-2 text-gray-500">加载中...</p>
-              </div>
-            ) : favorites.length === 0 ? (
-              <div className="text-center py-10 bg-white rounded-lg shadow-md">
-                <HeartIcon className="h-12 w-12 mx-auto text-gray-400" />
-                <p className="mt-2 text-gray-500">暂无收藏记录</p>
-                <Link to="/" className="mt-4 inline-block btn btn-primary">
-                  去浏览手机
-                </Link>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {favorites.map((item) => (
-                  <Link
-                    key={item._id}
-                    to={`/phone/${item.phone._id}`}
-                    className="block bg-white rounded-lg shadow-md overflow-hidden"
-                  >
-                    <div className="flex">
-                      <div className="w-24 h-24 bg-gray-200">
-                        {item.phone.images && item.phone.images[0] && (
-                          <img
-                            src={`${API_BASE_URL}${item.phone.images[0]}`}
-                            alt={item.phone.title}
-                            className="w-full h-full object-cover"
-                          />
-                        )}
-                      </div>
-                      <div className="p-3 flex-1">
-                        <h3 className="text-sm font-medium text-gray-900 line-clamp-1">
-                          {item.phone.title}
-                        </h3>
-                        <p className="text-sm text-primary-600 font-bold mt-1">
-                          ¥{item.phone.price}
-                        </p>
-                        <p className="text-xs text-gray-500 mt-2">
-                          {new Date(item.createdAt).toLocaleDateString('zh-CN')}
-                        </p>
-                      </div>
+                    <div className="ml-4">
+                      <h3 className="text-lg font-semibold text-gray-900">{item.name}</h3>
+                      <p className="mt-1 text-sm text-gray-500">{item.description}</p>
                     </div>
-                  </Link>
-                ))}
-              </div>
-            )}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="mt-8 text-center">
+              <button onClick={handleLogout} className="text-sm font-medium text-gray-600 hover:text-red-600 transition-colors">
+                退出登录
+              </button>
+            </div>
+          </>
+        ) : (
+          <div className="bg-white p-6 sm:p-8 rounded-lg shadow">
+            {renderDetailView()}
           </div>
         )}
+      </main>
+    </div>
+  );
+};
+
+// --- Sub-components for better organization ---
+
+const ProfileForm = ({ user, register, errors, handleSubmit, updateLoading }) => (
+  <form onSubmit={handleSubmit} className="space-y-6">
+    <div>
+      <label htmlFor="username" className="block text-sm font-medium text-gray-700">
+        用户名
+      </label>
+      <input
+        type="text"
+        id="username"
+        {...register('username', { required: '用户名不能为空' })}
+        className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+      />
+      {errors.username && <p className="mt-2 text-sm text-red-600">{errors.username.message}</p>}
+    </div>
+    <div>
+      <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+        新密码 (可选)
+      </label>
+      <input
+        type="password"
+        id="password"
+        {...register('password')}
+        className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+        placeholder="不修改请留空"
+      />
+    </div>
+    <div className="flex justify-end">
+      <button
+        type="submit"
+        disabled={updateLoading}
+        className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400"
+      >
+        {updateLoading ? (
+          <>
+            <ArrowPathIcon className="animate-spin h-5 w-5 mr-3" />
+            更新中...
+          </>
+        ) : '保存更改'}
+      </button>
+    </div>
+  </form>
+);
+
+const OrderList = ({ orders }) => {
+  if (orders.length === 0) {
+    return (
+      <div className="text-center py-10">
+        <CreditCardIcon className="mx-auto h-12 w-12 text-gray-400" />
+        <h3 className="mt-2 text-sm font-medium text-gray-900">没有订单</h3>
+        <p className="mt-1 text-sm text-gray-500">你还没有创建任何回收订单。</p>
+        <div className="mt-6">
+          <Link to="/recycle" className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
+            申请回收
+          </Link>
+        </div>
       </div>
+    );
+  }
+  return (
+    <div className="space-y-4">
+      {orders.map((order) => (
+        <OrderItem key={order._id} order={order} />
+      ))}
+    </div>
+  );
+};
+
+const ProductList = ({ products, emptyMessage, link, linkText }) => {
+  if (products.length === 0) {
+    return (
+      <div className="text-center py-10">
+        <HeartIcon className="mx-auto h-12 w-12 text-gray-400" />
+        <h3 className="mt-2 text-sm font-medium text-gray-900">{emptyMessage}</h3>
+        <div className="mt-6">
+          <Link to={link} className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
+            {linkText}
+          </Link>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+      {products.map((phone) => (
+        phone && <PhoneCard key={phone._id} phone={phone} />
+      ))}
     </div>
   );
 };

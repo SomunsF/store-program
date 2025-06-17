@@ -18,9 +18,21 @@ const OrderSchema = new mongoose.Schema({
   phoneModel: {
     type: String
   },
+  storage: {
+    type: String
+  },
+  color: {
+    type: String
+  },
   phoneCondition: {
     type: String,
-    enum: ['全新', '几乎全新', '良好', '一般']
+    enum: ['全新', '几乎全新', '良好', '一般', '较差']
+  },
+  batteryCapacity: {
+    type: String
+  },
+  functionalCondition: {
+    type: String
   },
   phoneImages: {
     type: [String]
@@ -37,6 +49,9 @@ const OrderSchema = new mongoose.Schema({
     type: String,
     enum: ['pending', 'processing', 'completed', 'cancelled'],
     default: 'pending'
+  },
+  estimatedPrice: {
+    type: Number,
   },
   createdAt: {
     type: Date,

@@ -4,7 +4,11 @@ const path = require('path');
 // 配置存储
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, 'uploads/');
+    // 确保上传目录存在
+    const uploadPath = path.join(__dirname, '../uploads');
+    // 注意：这里的路径是相对于当前文件(middleware)的，所以用'../uploads'
+    // fs.mkdirSync(uploadPath, { recursive: true });
+    cb(null, uploadPath);
   },
   filename: (req, file, cb) => {
     cb(

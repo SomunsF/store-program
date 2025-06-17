@@ -29,7 +29,7 @@ const UserLayout = ({ user, onLogout }) => {
       <header className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
           <Link to="/" className="text-2xl font-bold text-primary-600">
-            二手手机交易与回收
+            
           </Link>
           {user && user.role === 'admin' && (
             <Link

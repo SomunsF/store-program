@@ -11,14 +11,18 @@ exports.createRecycleOrder = async (req, res) => {
     const {
       phoneBrand,
       phoneModel,
+      storage,
+      color,
       phoneCondition,
-      description
+      batteryCapacity,
+      functionalCondition,
+      description,
     } = req.body;
 
     // 处理上传的图片
     const phoneImages = [];
     if (req.files && req.files.length > 0) {
-      req.files.forEach(file => {
+      req.files.forEach((file) => {
         phoneImages.push(`/uploads/${file.filename}`);
       });
     }
@@ -28,9 +32,13 @@ exports.createRecycleOrder = async (req, res) => {
       type: 'recycle',
       phoneBrand,
       phoneModel,
+      storage,
+      color,
       phoneCondition,
+      batteryCapacity,
+      functionalCondition,
       phoneImages,
-      description
+      description,
     });
 
     res.status(201).json(order);
@@ -117,6 +125,50 @@ exports.updateOrderStatus = async (req, res) => {
     }
   } catch (error) {
     console.error(error);
+    res.status(500).json({ message: '服务器错误' });
+  }
+};
+
+// @desc    更新订单 (仅管理员)
+// @route   PUT /api/orders/:id
+// @access  Private/Admin
+exports.updateOrder = async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id);
+
+    if (order) {
+      // 从请求体中获取所有字段
+      const { status, estimatedPrice } = req.body;
+      
+      order.status = status ?? order.status;
+      order.estimatedPrice = estimatedPrice ?? order.estimatedPrice;
+      
+      const updatedOrder = await order.save();
+      res.json(updatedOrder);
+    } else {
+      res.status(404).json({ message: '订单不存在' });
+    }
+  } catch (error) {
+    console.error('更新订单时出错:', error);
+    res.status(500).json({ message: '服务器错误' });
+  }
+};
+
+// @desc    删除订单 (仅管理员)
+// @route   DELETE /api/orders/:id
+// @access  Private/Admin
+exports.deleteOrder = async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id);
+
+    if (order) {
+      await order.deleteOne();
+      res.json({ message: '订单已删除' });
+    } else {
+      res.status(404).json({ message: '订单不存在' });
+    }
+  } catch (error) {
+    console.error('删除订单时出错:', error);
     res.status(500).json({ message: '服务器错误' });
   }
 }; 

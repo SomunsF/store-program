@@ -1,233 +1,364 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { toast } from 'react-toastify';
-import { ArrowPathIcon, CameraIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { ArrowPathIcon, PhotoIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import orderService from '../../services/orderService';
+
+const deviceData = {
+  苹果: ['iphone 16','iphone 16 pro','iphone 16 pro max','iphone 15','iphone 15 pro','iphone 15 pro max', 'iphone 14', 'iphone 14 pro', 'iphone 14 pro max', 'iphone 13','iphone 13 pro', 'iphone 13 pro max',
+     'iphone 12','iphone 12 pro','iphone 12 pro max','iphone 11','iphone 11 pro','iphone 11 pro max','iphone xs','iphone xs max','iphone xr','iphone x']
+};
+
+const storageOptions = ['64GB', '128GB', '256GB', '512GB', '1TB'];
+const colorOptions = ['黑色', '白色', '金色', '其他，在备注中说明'];
 
 const Recycle = () => {
   const navigate = useNavigate();
-  const { register, handleSubmit, formState: { errors }, reset } = useForm();
+  const { register, handleSubmit, formState: { errors }, reset, watch, setValue } = useForm();
   const [loading, setLoading] = useState(false);
-  const [images, setImages] = useState([]);
-  const [previewImages, setPreviewImages] = useState([]);
+  
+  const initialImageState = { front: null, back: null, top: null, bottom: null, left: null, right: null };
+  const [requiredImages, setRequiredImages] = useState(initialImageState);
+  const [requiredPreviews, setRequiredPreviews] = useState(initialImageState);
+  const [detailImages, setDetailImages] = useState([]);
+  const [detailPreviews, setDetailPreviews] = useState([]);
 
-  // 处理图片上传
-  const handleImageChange = (e) => {
+  const [models, setModels] = useState([]);
+
+  const selectedBrand = watch('brand');
+
+  useEffect(() => {
+    if (selectedBrand && deviceData[selectedBrand]) {
+      setModels(deviceData[selectedBrand]);
+    } else {
+      setModels([]);
+    }
+    setValue('model', ''); // Reset model when brand changes
+  }, [selectedBrand, setValue]);
+
+  const handleRequiredImageChange = useCallback((e, side) => {
+    const file = e.target.files[0];
+    if (file) {
+      setRequiredImages(prev => ({ ...prev, [side]: file }));
+      if (requiredPreviews[side]) {
+        URL.revokeObjectURL(requiredPreviews[side]);
+      }
+      setRequiredPreviews(prev => ({ ...prev, [side]: URL.createObjectURL(file) }));
+    }
+  }, [requiredPreviews]);
+
+  const removeRequiredImage = useCallback((side) => {
+    setRequiredImages(prev => ({ ...prev, [side]: null }));
+    if (requiredPreviews[side]) {
+      URL.revokeObjectURL(requiredPreviews[side]);
+    }
+    setRequiredPreviews(prev => ({ ...prev, [side]: null }));
+  }, [requiredPreviews]);
+
+  const handleDetailImageChange = useCallback((e) => {
     if (e.target.files) {
       const filesArray = Array.from(e.target.files);
-      
-      // 限制最多上传5张图片
-      if (images.length + filesArray.length > 5) {
-        toast.warning('最多上传5张图片');
+      if (detailImages.length + filesArray.length > 3) {
+        toast.warn('最多只能上传 3 张细节图片。');
         return;
       }
-      
-      // 更新图片状态
-      setImages([...images, ...filesArray]);
-      
-      // 创建预览URL
-      const newPreviewImages = filesArray.map(file => URL.createObjectURL(file));
-      setPreviewImages([...previewImages, ...newPreviewImages]);
+      setDetailImages(prev => [...prev, ...filesArray]);
+      const newPreviews = filesArray.map(file => URL.createObjectURL(file));
+      setDetailPreviews(prev => [...prev, ...newPreviews]);
     }
-  };
+  }, [detailImages.length]);
 
-  // 移除图片
-  const removeImage = (index) => {
-    // 释放预览URL
-    URL.revokeObjectURL(previewImages[index]);
-    
-    // 更新状态
-    setImages(images.filter((_, i) => i !== index));
-    setPreviewImages(previewImages.filter((_, i) => i !== index));
-  };
+  const removeDetailImage = useCallback((index) => {
+    URL.revokeObjectURL(detailPreviews[index]);
+    setDetailImages(prev => prev.filter((_, i) => i !== index));
+    setDetailPreviews(prev => prev.filter((_, i) => i !== index));
+  }, [detailPreviews]);
 
-  // 提交表单
   const onSubmit = async (data) => {
-    if (images.length === 0) {
-      toast.warning('请至少上传一张手机图片');
+    const allRequiredUploaded = Object.values(requiredImages).every(img => img !== null);
+    if (!allRequiredUploaded) {
+      toast.warn('请上传全部6张必需的设备照片。');
       return;
     }
 
+    setLoading(true);
     try {
-      setLoading(true);
-      
-      // 创建FormData对象
       const formData = new FormData();
       formData.append('phoneBrand', data.brand);
       formData.append('phoneModel', data.model);
+      formData.append('storage', data.storage);
+      formData.append('color', data.color);
       formData.append('phoneCondition', data.condition);
+      formData.append('batteryCapacity', data.batteryCapacity);
+      formData.append('functionalCondition', data.functionalCondition);
       formData.append('description', data.description);
       
-      // 添加图片
-      images.forEach(file => {
-        formData.append('images', file);
+      const filesToUpload = [...Object.values(requiredImages), ...detailImages];
+      filesToUpload.forEach(file => {
+        if(file) formData.append('images', file);
       });
-      
-      // 提交表单
+
       await orderService.createRecycleOrder(formData);
-      
-      toast.success('回收订单提交成功');
+      toast.success('回收订单已成功提交！');
       reset();
-      setImages([]);
-      setPreviewImages([]);
+      
+      // Reset image states
+      setRequiredImages(initialImageState);
+      setRequiredPreviews(initialImageState);
+      setDetailImages([]);
+      detailPreviews.forEach(url => URL.revokeObjectURL(url));
+      setDetailPreviews([]);
+
       navigate('/profile');
     } catch (error) {
       console.error('提交回收订单失败:', error);
-      toast.error('提交失败，请稍后再试');
+      toast.error(error.response?.data?.message || '提交失败，请稍后重试。');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="container mx-auto px-4 pb-20 pt-4">
-      <div className="max-w-md mx-auto">
-        <h1 className="text-2xl font-bold text-gray-900 mb-6">手机回收</h1>
-
-        {/* 回收流程 */}
-        <div className="bg-white rounded-lg shadow-md p-4 mb-6">
-          <h2 className="text-lg font-medium text-gray-900 mb-3">回收流程</h2>
-          <ol className="list-decimal list-inside text-gray-600 space-y-2">
-            <li>填写手机信息并上传照片</li>
-            <li>提交回收申请</li>
-            <li>客服人员会在24小时内联系您</li>
-            <li>上门验机或邮寄至回收中心</li>
-            <li>验机通过后支付回收款</li>
-          </ol>
+    <div className="bg-white min-h-screen">
+      <main className="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="py-16 sm:py-24 text-center">
+          <h1 className="text-4xl sm:text-6xl font-bold tracking-tight text-gray-900">
+            设备回收
+          </h1>
+          <p className="mt-4 text-lg sm:text-xl text-gray-600 max-w-2xl mx-auto">
+            简单几步，轻松完成估价和回收。
+          </p>
         </div>
 
-        {/* 回收表单 */}
-        <form
-          onSubmit={handleSubmit(onSubmit)}
-          className="bg-white rounded-lg shadow-md p-4"
-        >
-          <div className="mb-4">
-            <label className="block text-gray-700 text-sm font-medium mb-2">
-              手机品牌 <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              className={`input ${errors.brand ? 'border-red-500' : ''}`}
-              {...register('brand', { required: '请输入手机品牌' })}
-              placeholder="如: Apple, 小米, 华为等"
-            />
-            {errors.brand && (
-              <p className="text-red-500 text-xs mt-1">{errors.brand.message}</p>
-            )}
-          </div>
+        <div className="max-w-2xl mx-auto pb-24">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+            <div>
+              
+              <div className="mt-6 grid grid-cols-1 gap-y-6 sm:grid-cols-2 sm:gap-x-8">
+                <div>
+                  <label htmlFor="brand" className="block text-sm font-medium text-gray-700">
+                    设备品牌
+                  </label>
+                  <select
+                    id="brand"
+                    {...register('brand', { required: '请选择设备品牌' })}
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  >
+                    <option value="">选择品牌</option>
+                    {Object.keys(deviceData).map(brand => (
+                      <option key={brand} value={brand}>{brand}</option>
+                    ))}
+                  </select>
+                  {errors.brand && <p className="mt-2 text-sm text-red-600">{errors.brand.message}</p>}
+                </div>
+                <div>
+                  <label htmlFor="model" className="block text-sm font-medium text-gray-700">
+                    设备型号
+                  </label>
+                  <select
+                    id="model"
+                    {...register('model', { required: '请选择设备型号' })}
+                    disabled={!selectedBrand || models.length === 0}
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm disabled:bg-gray-50"
+                  >
+                    <option value="">选择型号</option>
+                    {models.map(model => (
+                      <option key={model} value={model}>{model}</option>
+                    ))}
+                  </select>
+                  {errors.model && <p className="mt-2 text-sm text-red-600">{errors.model.message}</p>}
+                </div>
+                <div>
+                  <label htmlFor="storage" className="block text-sm font-medium text-gray-700">
+                    存储容量
+                  </label>
+                  <select
+                    id="storage"
+                    {...register('storage', { required: '请选择存储容量' })}
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  >
+                    <option value="">选择容量</option>
+                    {storageOptions.map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                  {errors.storage && <p className="mt-2 text-sm text-red-600">{errors.storage.message}</p>}
+                </div>
+                <div>
+                  <label htmlFor="color" className="block text-sm font-medium text-gray-700">
+                    颜色
+                  </label>
+                  <select
+                    id="color"
+                    {...register('color', { required: '请选择颜色' })}
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  >
+                    <option value="">选择颜色</option>
+                    {colorOptions.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                  {errors.color && <p className="mt-2 text-sm text-red-600">{errors.color.message}</p>}
+                </div>
+                <div>
+                  <label htmlFor="condition" className="block text-sm font-medium text-gray-700">
+                    设备成色
+                  </label>
+                  <select
+                    id="condition"
+                    {...register('condition', { required: '请选择设备成色' })}
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  >
+                    <option value="">选择成色</option>
+                    <option value="几乎全新">99新，无任何使用痕迹</option>
+                    <option value="良好">95新，有轻微使用痕迹</option>
+                    <option value="一般">9新，有明显划痕或磕碰</option>
+                    <option value="较差">8新，有严重划痕或磕碰</option>
+                  </select>
+                  {errors.condition && <p className="mt-2 text-sm text-red-600">{errors.condition.message}</p>}
+                </div>
+                <div>
+                  <label htmlFor="batteryCapacity" className="block text-sm font-medium text-gray-700">
+                    电池容量
+                  </label>
+                  <select
+                    id="batteryCapacity"
+                    {...register('batteryCapacity', { required: '请选择电池容量' })}
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  >
+                    <option value="">选择容量</option>
+                    <option value="100%-95%">100%-95%</option>
+                    <option value="94%-90%">94%-90%</option>
+                    <option value="89%-85%">89%-85%</option>
+                    <option value="85%以下">85%以下</option>
+                  </select>
+                  {errors.batteryCapacity && <p className="mt-2 text-sm text-red-600">{errors.batteryCapacity.message}</p>}
+                </div>
+                <div className="sm:col-span-2">
+                  <label htmlFor="functionalCondition" className="block text-sm font-medium text-gray-700">
+                    一切功能是否正常
+                  </label>
+                  <select
+                    id="functionalCondition"
+                    {...register('functionalCondition', { required: '一切功能是否正常' })}
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  >
+                    <option value="">请选择</option>
+                    <option value="正常">是，功能一切正常</option>
+                    <option value="损坏">否，有功能性损坏</option>
+                  </select>
+                  {errors.functionalCondition && <p className="mt-2 text-sm text-red-600">{errors.functionalCondition.message}</p>}
+                </div>
+                <div className="sm:col-span-2">
+                  <label htmlFor="description" className="block text-sm font-medium text-gray-700">
+                    其他描述
+                  </label>
+                  <textarea
+                    id="description"
+                    rows={4}
+                    {...register('description')}
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    placeholder="补充描述设备的具体状况，如维修历史、功能损坏位置与程度等。"
+                  />
+                </div>
+              </div>
+            </div>
 
-          <div className="mb-4">
-            <label className="block text-gray-700 text-sm font-medium mb-2">
-              手机型号 <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              className={`input ${errors.model ? 'border-red-500' : ''}`}
-              {...register('model', { required: '请输入手机型号' })}
-              placeholder="如: iPhone 13, 小米12, P40等"
-            />
-            {errors.model && (
-              <p className="text-red-500 text-xs mt-1">{errors.model.message}</p>
-            )}
-          </div>
-
-          <div className="mb-4">
-            <label className="block text-gray-700 text-sm font-medium mb-2">
-              手机成色 <span className="text-red-500">*</span>
-            </label>
-            <select
-              className={`input ${errors.condition ? 'border-red-500' : ''}`}
-              {...register('condition', { required: '请选择手机成色' })}
-            >
-              <option value="">请选择</option>
-              <option value="全新">全新</option>
-              <option value="几乎全新">几乎全新</option>
-              <option value="良好">良好</option>
-              <option value="一般">一般</option>
-            </select>
-            {errors.condition && (
-              <p className="text-red-500 text-xs mt-1">{errors.condition.message}</p>
-            )}
-          </div>
-
-          <div className="mb-4">
-            <label className="block text-gray-700 text-sm font-medium mb-2">
-              其他描述
-            </label>
-            <textarea
-              className="input h-24"
-              {...register('description')}
-              placeholder="请描述手机的使用年限、电池状态、是否有明显磕碰等情况..."
-            ></textarea>
-          </div>
-
-          <div className="mb-6">
-            <label className="block text-gray-700 text-sm font-medium mb-2">
-              上传手机照片 <span className="text-red-500">*</span>
-              <span className="text-gray-500 text-xs ml-2">(最多5张)</span>
-            </label>
-            
-            {/* 图片预览 */}
-            {previewImages.length > 0 && (
-              <div className="grid grid-cols-3 gap-2 mb-3">
-                {previewImages.map((src, index) => (
-                  <div key={index} className="relative">
-                    <img
-                      src={src}
-                      alt={`手机图片 ${index + 1}`}
-                      className="w-full h-24 object-cover rounded"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => removeImage(index)}
-                      className="absolute -top-2 -right-2 bg-white rounded-full p-1 shadow"
-                    >
-                      <XMarkIcon className="h-4 w-4 text-red-500" />
-                    </button>
-                  </div>
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900">设备照片</h2>
+              <p className="text-sm text-gray-500 mt-1">请上传设备的清晰照片。</p>
+              <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-4">
+                {[
+                  { key: 'front', label: '正面' }, { key: 'back', label: '背面' }, { key: 'top', label: '顶部' },
+                  { key: 'bottom', label: '底部' }, { key: 'left', label: '左侧' }, { key: 'right', label: '右侧' },
+                ].map(side => (
+                  <ImageUploadSlot
+                    key={side.key}
+                    label={side.label}
+                    preview={requiredPreviews[side.key]}
+                    onImageChange={(e) => handleRequiredImageChange(e, side.key)}
+                    onImageRemove={() => removeRequiredImage(side.key)}
+                  />
                 ))}
               </div>
-            )}
-            
-            {/* 上传按钮 */}
-            {images.length < 5 && (
-              <div className="mt-2">
-                <label className="block w-full border-2 border-dashed border-gray-300 rounded-md p-4 text-center cursor-pointer hover:border-primary-500">
-                  <CameraIcon className="h-6 w-6 mx-auto text-gray-400" />
-                  <span className="mt-2 block text-sm text-gray-500">点击上传图片</span>
-                  <input
-                    type="file"
-                    className="hidden"
-                    accept="image/*"
-                    multiple
-                    onChange={handleImageChange}
-                  />
-                </label>
-              </div>
-            )}
-          </div>
+            </div>
 
-          <div>
-            <button
-              type="submit"
-              className="w-full btn btn-primary py-3 flex justify-center items-center"
-              disabled={loading}
-            >
-              {loading ? (
-                <>
-                  <ArrowPathIcon className="animate-spin h-5 w-5 mr-2" />
-                  提交中...
-                </>
-              ) : (
-                '提交回收订单'
-              )}
-            </button>
-          </div>
-        </form>
-      </div>
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900">磕碰划痕细节</h2>
+              <p className="text-sm text-gray-500 mt-1">如有，请上传特写照片（最多3张）。</p>
+              <div className="mt-4">
+                <div className="flex items-center justify-center w-full">
+                  <label htmlFor="detail-file-upload" className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
+                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                      <PhotoIcon className="w-8 h-8 mb-3 text-gray-400" />
+                      <p className="mb-2 text-sm text-gray-500"><span className="font-semibold">点击上传</span> 或拖拽到此</p>
+                    </div>
+                    <input id="detail-file-upload" type="file" className="hidden" multiple accept="image/*" onChange={handleDetailImageChange} disabled={detailImages.length >= 3} />
+                  </label>
+                </div>
+                {detailPreviews.length > 0 && (
+                  <div className="mt-4 grid grid-cols-3 sm:grid-cols-3 gap-4">
+                    {detailPreviews.map((src, index) => (
+                      <div key={src} className="relative group">
+                        <img src={src} alt={`细节 ${index + 1}`} className="w-full h-24 object-cover rounded-md" />
+                        <button type="button" onClick={() => removeDetailImage(index)} className="absolute top-1 right-1 bg-gray-800 bg-opacity-50 rounded-full p-1 text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                          <XMarkIcon className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="pt-6">
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400"
+              >
+                {loading ? (
+                  <>
+                    <ArrowPathIcon className="animate-spin h-5 w-5 mr-3" />
+                    正在提交...
+                  </>
+                ) : (
+                  '确认并提交回收订单'
+                )}
+              </button>
+            </div>
+          </form>
+        </div>
+      </main>
     </div>
   );
 };
+
+const ImageUploadSlot = ({ label, preview, onImageChange, onImageRemove }) => (
+  <div className="text-center">
+    <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+    <div className="relative w-full h-32 border-2 border-gray-300 border-dashed rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-50">
+      {preview ? (
+        <>
+          <img src={preview} alt={label} className="w-full h-full object-contain rounded-lg" />
+          <button
+            type="button"
+            onClick={onImageRemove}
+            className="absolute top-1 right-1 bg-gray-800 bg-opacity-50 rounded-full p-1 text-white"
+          >
+            <XMarkIcon className="w-4 h-4" />
+          </button>
+        </>
+      ) : (
+        <>
+          <PhotoIcon className="w-8 h-8" />
+          <input
+            type="file"
+            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+            accept="image/*"
+            onChange={onImageChange}
+          />
+        </>
+      )}
+    </div>
+  </div>
+);
 
 export default Recycle;
