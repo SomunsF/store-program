@@ -43,6 +43,20 @@ const getFavorites = async () => {
   }
 };
 
+// 添加到浏览历史
+const addBrowsingHistory = async (phoneId) => {
+  try {
+    await axios.post(
+      `${API_URL}/browsing-history`,
+      { phoneId },
+      getConfig()
+    );
+  } catch (error) {
+    // 这个错误可以静默处理
+    console.error('添加浏览历史失败:', error.response?.data?.message || error.message);
+  }
+};
+
 // 更新用户资料
 const updateUserProfile = async (userData) => {
   try {
@@ -81,6 +95,7 @@ const userService = {
   getUsers,
   getBrowsingHistory,
   getFavorites,
+  addBrowsingHistory,
   updateUserProfile,
   updateUser,
   deleteUser,

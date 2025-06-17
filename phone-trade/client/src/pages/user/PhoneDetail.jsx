@@ -36,6 +36,13 @@ const PhoneDetail = ({ user }) => {
     fetchPhone();
   }, [id]);
 
+  // 记录浏览历史 (用户登录时)
+  useEffect(() => {
+    if (user && id) {
+      userService.addBrowsingHistory(id);
+    }
+  }, [user, id]);
+
   // 获取收藏状态
   useEffect(() => {
     if (user) {

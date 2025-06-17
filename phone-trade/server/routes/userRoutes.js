@@ -4,6 +4,7 @@ const {
   getUsers,
   getBrowsingHistory,
   getFavorites,
+  addBrowsingHistory,
   updateUserProfile,
   updateUser,
   deleteUser,
@@ -15,6 +16,9 @@ router.get('/', protect, admin, getUsers);
 
 // 获取用户浏览历史
 router.get('/browsing-history', protect, getBrowsingHistory);
+
+// 添加到浏览历史
+router.post('/browsing-history', protect, addBrowsingHistory);
 
 // 获取用户收藏列表
 router.get('/favorites', protect, getFavorites);

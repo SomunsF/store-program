@@ -21,9 +21,9 @@ exports.getUsers = async (req, res) => {
 exports.getBrowsingHistory = async (req, res) => {
   try {
     const history = await BrowsingHistory.find({ user: req.user._id })
-      .sort({ createdAt: -1 })
+      .sort({ updatedAt: -1 })
       .populate('phone', 'title brand model price images')
-      .limit(10);
+      .limit(20);
     
     res.json(history);
   } catch (error) {
@@ -135,6 +135,30 @@ exports.deleteUser = async (req, res) => {
     }
   } catch (error) {
     console.error(error);
+    res.status(500).json({ message: '服务器错误' });
+  }
+};
+
+// @desc    添加或更新浏览历史
+// @route   POST /api/users/browsing-history
+// @access  Private
+exports.addBrowsingHistory = async (req, res) => {
+  try {
+    const { phoneId } = req.body;
+    const userId = req.user._id;
+
+    // 使用 findOneAndUpdate 和 upsert 选项.
+    // 如果找到匹配项，它会更新（特别是 updatedAt 时间戳）.
+    // 如果没找到，它会创建一个新条目.
+    await BrowsingHistory.findOneAndUpdate(
+      { user: userId, phone: phoneId },
+      { $set: { user: userId, phone: phoneId } },
+      { upsert: true, new: true }
+    );
+
+    res.status(200).json({ message: '浏览历史已记录' });
+  } catch (error) {
+    console.error('添加浏览历史时出错:', error);
     res.status(500).json({ message: '服务器错误' });
   }
 }; 
