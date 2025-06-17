@@ -14,7 +14,7 @@ const PhoneCard = ({ phone }) => {
             <img
               src={imageUrl}
               alt={phone.title}
-              className="w-full h-full object-center object-cover group-hover:opacity-75"
+              className="w-full h-full object-center object-contain group-hover:opacity-75"
             />
           ) : (
             <div className="flex items-center justify-center h-full">

@@ -296,8 +296,8 @@ const Recycle = () => {
                 {detailPreviews.length > 0 && (
                   <div className="mt-4 grid grid-cols-3 sm:grid-cols-3 gap-4">
                     {detailPreviews.map((src, index) => (
-                      <div key={src} className="relative group">
-                        <img src={src} alt={`细节 ${index + 1}`} className="w-full h-24 object-cover rounded-md" />
+                      <div key={src} className="relative group bg-gray-100 rounded-md">
+                        <img src={src} alt={`细节 ${index + 1}`} className="w-full h-24 object-contain rounded-md" />
                         <button type="button" onClick={() => removeDetailImage(index)} className="absolute top-1 right-1 bg-gray-800 bg-opacity-50 rounded-full p-1 text-white opacity-0 group-hover:opacity-100 transition-opacity">
                           <XMarkIcon className="w-4 h-4" />
                         </button>

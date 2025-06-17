@@ -1,7 +1,7 @@
 {
   "name": "phone-trade-server",
   "version": "1.0.0",
-  "description": "二手手机交易与回收平台后端",
+  "description": "Best后端",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

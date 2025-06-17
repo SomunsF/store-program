@@ -69,7 +69,7 @@ const OrderItem = ({ order }) => {
                   <img
                     src={`${API_BASE_URL}${image}`}
                     alt={`回收设备图片 ${index + 1}`}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-contain"
                   />
                 </div>
               ))}

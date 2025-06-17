@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { HeartIcon as HeartOutline } from '@heroicons/react/24/outline';
+import { HeartIcon as HeartOutline, ChevronLeftIcon } from '@heroicons/react/24/outline';
 import { HeartIcon as HeartSolid } from '@heroicons/react/24/solid';
+import Lightbox from "yet-another-react-lightbox";
+import "yet-another-react-lightbox/styles.css";
 import phoneService from '../../services/phoneService';
 import userService from '../../services/userService';
 import orderService from '../../services/orderService';
@@ -18,6 +20,7 @@ const PhoneDetail = ({ user }) => {
   const [activeImage, setActiveImage] = useState(0);
   const [favorite, setFavorite] = useState(false);
   const [favorites, setFavorites] = useState([]);
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
 
   // 获取手机详情
   useEffect(() => {
@@ -131,118 +134,143 @@ const PhoneDetail = ({ user }) => {
       )
     : null;
 
+  const imagesForLightbox = phone.images.map(img => ({
+    src: `${API_BASE_URL}${img}`
+  }));
+
   return (
-    <div className="container mx-auto px-4 pb-24 pt-4">
-      <div className="mb-4">
-        <Link to="/" className="text-primary-600 hover:underline">
-          &larr; 返回首页
-        </Link>
-      </div>
-
-      <div className="bg-white rounded-lg shadow-md overflow-hidden">
-        {/* 商品图片 */}
-        <div className="relative">
-          <img
-            src={`${API_BASE_URL}${phone.images[activeImage]}`}
-            alt={phone.title}
-            className="w-full h-64 object-cover sm:h-96"
-          />
-          <button
-            onClick={toggleFavorite}
-            className="absolute top-4 right-4 bg-white p-2 rounded-full shadow-md"
+    <>
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-16">
+        <div className="mb-6">
+          <Link 
+            to="/" 
+            className="inline-flex items-center text-gray-600 hover:text-gray-900 transition-colors bg-gray-100 hover:bg-gray-200 px-3 py-1 rounded-lg"
           >
-            {favorite ? (
-              <HeartSolid className="h-6 w-6 text-red-500" />
-            ) : (
-              <HeartOutline className="h-6 w-6 text-gray-500" />
-            )}
-          </button>
+            <ChevronLeftIcon className="h-5 w-5 -ml-1" />
+            <span className="ml-1 text-sm font-medium">返回首页</span>
+          </Link>
         </div>
 
-        {/* 缩略图 */}
-        {phone.images.length > 1 && (
-          <div className="flex overflow-x-auto p-2 gap-2">
-            {phone.images.map((image, index) => (
-              <div
-                key={index}
-                className={`flex-shrink-0 w-16 h-16 border-2 rounded cursor-pointer ${
-                  activeImage === index
-                    ? 'border-primary-500'
-                    : 'border-transparent'
-                }`}
-                onClick={() => setActiveImage(index)}
-              >
-                <img
-                  src={`${API_BASE_URL}${image}`}
-                  alt={`${phone.title} - 图片 ${index + 1}`}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* 商品信息 */}
-        <div className="p-4">
-          <h1 className="text-xl font-semibold text-gray-900">{phone.title}</h1>
-          
-          <div className="mt-4 flex items-baseline">
-            <span className="text-2xl font-bold text-primary-600">
-              ¥{phone.price}
-            </span>
-            {phone.originalPrice && (
-              <span className="ml-2 text-sm text-gray-500 line-through">
-                ¥{phone.originalPrice}
-              </span>
-            )}
-            {discountPercent && discountPercent > 0 && (
-              <span className="ml-2 text-xs bg-red-100 text-red-800 px-2 py-0.5 rounded">
-                省 {discountPercent}%
-              </span>
-            )}
-          </div>
-
-          <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
-            <div>
-              <span className="text-gray-500">品牌：</span>
-              <span className="font-medium">{phone.brand}</span>
-            </div>
-            <div>
-              <span className="text-gray-500">型号：</span>
-              <span className="font-medium">{phone.model}</span>
-            </div>
-            <div>
-              <span className="text-gray-500">存储：</span>
-              <span className="font-medium">{phone.storage}</span>
-            </div>
-            <div>
-              <span className="text-gray-500">颜色：</span>
-              <span className="font-medium">{phone.color}</span>
-            </div>
-            <div>
-              <span className="text-gray-500">成色：</span>
-              <span className="font-medium">{phone.condition}</span>
-            </div>
-          </div>
-
-          <div className="mt-6">
-            <h2 className="text-lg font-medium text-gray-900">商品描述</h2>
-            <p className="mt-2 text-gray-600 whitespace-pre-line">
-              {phone.description}
-            </p>
-          </div>
-
-          <div className="mt-8">
-            <button
-              onClick={handlePurchase}
-              className="w-full btn btn-primary py-3 text-center"
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 lg:gap-x-20 gap-y-8">
+          {/* Image Gallery */}
+          <div className="flex flex-col gap-4">
+            <div 
+              className="relative bg-gray-100 rounded-lg flex items-center justify-center cursor-pointer"
+              onClick={() => setIsLightboxOpen(true)}
             >
-              立即下单
-            </button>
+              <img
+                src={`${API_BASE_URL}${phone.images[activeImage]}`}
+                alt={phone.title}
+                className="w-full h-auto object-contain aspect-square rounded-lg"
+              />
+              <button
+                onClick={toggleFavorite}
+                className="absolute top-4 right-4 bg-white/60 backdrop-blur-sm p-2 rounded-full shadow-md hover:bg-white transition-colors"
+              >
+                {favorite ? (
+                  <HeartSolid className="h-6 w-6 text-red-500" />
+                ) : (
+                  <HeartOutline className="h-6 w-6 text-gray-700" />
+                )}
+              </button>
+            </div>
+            {phone.images.length > 1 && (
+              <div className="flex overflow-x-auto gap-3">
+                {phone.images.map((image, index) => (
+                  <div
+                    key={index}
+                    className={`flex-shrink-0 w-20 h-20 bg-gray-100 rounded-md cursor-pointer border-2 transition-colors ${
+                      activeImage === index
+                        ? 'border-primary-500'
+                        : 'border-transparent hover:border-gray-300'
+                    }`}
+                    onClick={() => setActiveImage(index)}
+                  >
+                    <img
+                      src={`${API_BASE_URL}${image}`}
+                      alt={`${phone.title} - 图片 ${index + 1}`}
+                      className="w-full h-full object-contain rounded-sm"
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Product Info */}
+          <div className="flex flex-col">
+            <h1 className="text-3xl lg:text-4xl font-bold text-gray-900">{phone.title}</h1>
+            
+            <div className="mt-4">
+              <span className="text-3xl font-bold text-gray-800">
+                ¥{phone.price}
+              </span>
+              {phone.originalPrice && (
+                <span className="ml-3 text-base text-gray-400 line-through">
+                  ¥{phone.originalPrice}
+                </span>
+              )}
+              {discountPercent && discountPercent > 0 && (
+                <span className="ml-4 text-sm bg-blue-100 text-primary-700 px-2 py-1 rounded-md font-medium">
+                  省 {discountPercent}%
+                </span>
+              )}
+            </div>
+            
+            <div className="mt-8 border-t pt-6">
+              <h2 className="text-lg font-medium text-gray-900">规格</h2>
+              <div className="mt-4 space-y-3 text-gray-600">
+                <div className="flex">
+                  <span className="w-20 text-gray-500">品牌</span>
+                  <span className="font-medium text-gray-800">{phone.brand}</span>
+                </div>
+                <div className="flex">
+                  <span className="w-20 text-gray-500">型号</span>
+                  <span className="font-medium text-gray-800">{phone.model}</span>
+                </div>
+                <div className="flex">
+                  <span className="w-20 text-gray-500">存储</span>
+                  <span className="font-medium text-gray-800">{phone.storage}</span>
+                </div>
+                <div className="flex">
+                  <span className="w-20 text-gray-500">颜色</span>
+                  <span className="font-medium text-gray-800">{phone.color}</span>
+                </div>
+                <div className="flex">
+                  <span className="w-20 text-gray-500">成色</span>
+                  <span className="font-medium text-gray-800">{phone.condition}</span>
+                </div>
+              </div>
+            </div>
+            
+            {phone.description && (
+              <div className="mt-8 border-t pt-6">
+                <h2 className="text-lg font-medium text-gray-900">商品描述</h2>
+                <p className="mt-4 text-gray-600 whitespace-pre-line leading-relaxed">
+                  {phone.description}
+                </p>
+              </div>
+            )}
+
+            <div className="mt-10 flex-grow flex items-end">
+              <button
+                onClick={handlePurchase}
+                className="w-full max-w-xs btn btn-primary py-3 text-base font-semibold text-center rounded-lg shadow-sm hover:shadow-md transition-shadow"
+              >
+                立即下单
+              </button>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+
+      <Lightbox
+        open={isLightboxOpen}
+        close={() => setIsLightboxOpen(false)}
+        slides={imagesForLightbox}
+        index={activeImage}
+      />
+    </>
   );
 };
 

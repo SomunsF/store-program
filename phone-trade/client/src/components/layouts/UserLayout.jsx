@@ -43,7 +43,7 @@ const UserLayout = ({ user, onLogout }) => {
       </header>
 
       {/* 主内容 */}
-      <main className="flex-grow">
+      <main className="flex-grow pb-20">
         <Outlet />
       </main>
 
