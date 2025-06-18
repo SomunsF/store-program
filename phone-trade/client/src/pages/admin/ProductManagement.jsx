@@ -123,6 +123,18 @@ const ProductModal = ({ phone, onClose, onSave }) => {
                 </label>
                 {key === 'description' ? (
                   <textarea name={key} value={formData[key]} onChange={handleChange} className="input" />
+                ) : key === 'condition' ? (
+                  <select
+                    name="condition"
+                    value={formData.condition}
+                    onChange={handleChange}
+                    className="input"
+                  >
+                    <option value="全新">全新</option>
+                    <option value="几乎全新">几乎全新</option>
+                    <option value="良好">良好</option>
+                    <option value="一般">一般</option>
+                  </select>
                 ) : (
                   <input
                     type={key === 'price' || key === 'originalPrice' ? 'number' : 'text'}
